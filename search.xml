@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search> 
+  
+  
+    
+    <entry>
+      <title>Centos7下安装Mysql8.x</title>
+      <link href="/post/fc8f90a3.html"/>
+      <url>/post/fc8f90a3.html</url>
+      
+        <content type="html"><![CDATA[<h2 id="Centos7下安装Mysql8-x"><a href="#Centos7下安装Mysql8-x" class="headerlink" title="Centos7下安装Mysql8.x"></a>Centos7下安装Mysql8.x</h2><h3 id="1-安装检查"><a href="#1-安装检查" class="headerlink" title="1.安装检查"></a>1.安装检查</h3><ul><li>查看有没有安装mysql<br><code>rpm -qa | grep -i mysql</code></li><li>查找有没有mysql文件<br><code>find / -name mysql</code></li><li>有的话直接删除，没有直接跳过<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">rm -rf /etc/selinux/targeted/active/modules/100/mysql</span><br><span class="line">rm -rf /usr/lib64/mysql</span><br><span class="line">rm -rf /usr/share/mysql</span><br></pre></td></tr></table></figure><h3 id="2-安装wget和Mysql8"><a href="#2-安装wget和Mysql8" class="headerlink" title="2.安装wget和Mysql8"></a>2.安装wget和Mysql8</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">yum install wget   // 安装wget</span><br><span class="line">wget -P /home/mysql8/ http://dev.mysql.com/get/mysql80-community-release-el7-3.noarch.rpm //在/home/mysql8/下载mysql8</span><br><span class="line">yum install mysql80-community-release-el7-3.noarch.rpm //配置mysql的yum源</span><br><span class="line">yum -y install mysql-community-server //默认情况下自动安装最新版的MySQL</span><br></pre></td></tr></table></figure><h3 id="3-安装出错GPC秘钥"><a href="#3-安装出错GPC秘钥" class="headerlink" title="3.安装出错GPC秘钥"></a>3.安装出错GPC秘钥</h3><img src="https://s1.ax1x.com/2022/08/14/vU5jQ1.png" alt="">如果出现上述问题（如果没有出错直接进入下一步）是因为官方 MySQL 存储库的 GPG 密钥已过期，无法安装或更新 MySQL 包。并且官方也提交了该<a href="https://bugs.mysql.com/bug.php?id=106188">Bug</a>。我们可以使用以下命令重新导入新的密钥来解决该问题 。<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022  //(2022则为今年的年份)，执行完GPG升级，需要重新安装</span><br><span class="line">yum -y install mysql-community-server // 重新执行上述第二步 安装命令</span><br></pre></td></tr></table></figure><h3 id="4-安装之后的常见命令"><a href="#4-安装之后的常见命令" class="headerlink" title="4.安装之后的常见命令"></a>4.安装之后的常见命令</h3>安装完毕之后，这里配置自启动和防火墙命令等<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">systemctl start mysqld  #启动mysql服务 mysqld(简写)也可以写成mysqld.service</span><br><span class="line">systemctl status mysqld #查看mysql服务是否开启</span><br><span class="line">systemctl stop mysqld.service #结束mysql服务</span><br><span class="line">systemctl restart mysqld.service #重启mysql服务</span><br><span class="line">systemctl enable mysqld   #设置mysqld开机自启动，如果需要查看有哪些开启自启动 systemctl list-unit-files|grep enabled</span><br><span class="line">systemctl disable mysqld #关闭开机自启动</span><br></pre></td></tr></table></figure><img src="https://s1.ax1x.com/2022/08/14/vU5xL6.png" alt="">有时候如果需要对外访问暴露可能需要做防火墙端口配置<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"> firewall-cmd --permanent --add-port=3306/tcp    #打开3306端口</span><br><span class="line">firewall-cmd --permanent --remove-port=3306/tcp     #关闭3306端口</span><br><span class="line">firewall-cmd --reload    #重载使上述命令生效</span><br><span class="line">firewall-cmd --query-port=3306/tcp           #查询3306端口是否开放</span><br><span class="line">若嫌麻烦可以直接关闭防火墙，安全性自行评估</span><br><span class="line">systemctl stop firewalld.service   #关闭防火墙</span><br><span class="line">firewall-cmd --zone=public --list-ports   #查看防火墙所有开放的端口</span><br><span class="line">firewall-cmd --state      #查看防火墙状态 </span><br></pre></td></tr></table></figure><h3 id="5-修改临时密码"><a href="#5-修改临时密码" class="headerlink" title="5.修改临时密码"></a>5.修改临时密码</h3>mysql在安装的时候会自动生成一个root的临时密码，为第一次登录之后必须要修改，否则无法输入mysql命令，这里有些文章会说修改mysql的密码策略状态之类的，本人为了做尽量少的改动模拟还原真实环境不会修改密码安全性策略如需修改可查看下面链接<a href="https://blog.csdn.net/weixin_46379270/article/details/120293776">修改密码安全策略</a><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">grep &quot;password&quot; /var/log/mysqld.log   # 可查看临时密码</span><br><span class="line">mysql -u root -p   # 复制临时密码粘贴进入mysql控制台</span><br><span class="line">alter user user()   identified by  &#x27;1qaz2wsx~@!AA&#x27;;   #修改密码为 1qaz2wsx~@!AA</span><br></pre></td></tr></table></figure><img src="https://s1.ax1x.com/2022/08/14/vU5vsx.png" alt=""><h3 id="6-配置远程访问"><a href="#6-配置远程访问" class="headerlink" title="6.配置远程访问"></a>6.配置远程访问</h3>在第五步之后可以修改了密码之后此时可以配置远程数据库工具访问，有两种方式都可以实现：首先进入mysql命令台<blockquote><p> mysql -u root -p </p><ol><li>直接修改原有root用户实现远程访问<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">use mysql;</span><br><span class="line">select user,host from user;</span><br><span class="line">update user set Host=&#x27;%&#x27; where User=&#x27;root&#x27;;   # 修改user为root的用户的host从原来的localhost变为%</span><br><span class="line">ALTER USER &#x27;root&#x27;@&#x27;%&#x27; IDENTIFIED WITH mysql_native_password BY &#x27;1qaz2wsx~@!AA&#x27;;  #(可能不需要下次试验)</span><br><span class="line">flush privileges;   #刷新</span><br></pre></td></tr></table></figure></li><li>创建一个新用户设置远程访问并且给数据库操作授权<pre><code>create user &#39;root1234&#39;@&#39;%&#39; IDENTIFIED WITH mysql_native_password BY &#39;password&#39;; #创建远程访问root用户grant all on *.* to &#39;root1234&#39;@&#39;%&#39;;   # 为该用户授予全部权限此处root1234用户名可随意更改</code></pre></li></ol></blockquote></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> linux </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> centos7 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Windows环境下搭建centos7</title>
+      <link href="/post/ef04e708.html"/>
+      <url>/post/ef04e708.html</url>
+      
+        <content type="html"><![CDATA[<h3 id="vagrant和VirtualBox下载"><a href="#vagrant和VirtualBox下载" class="headerlink" title="vagrant和VirtualBox下载"></a>vagrant和VirtualBox下载</h3><p><a href="https://www.vagrantup.com/">​vagrant</a>是一个基于 Ruby语言 的工具，用于创建和部署虚拟化开发环境。它可以结合一些VM工具来一起构建创建linux环境。首先需要下载vagrant和VirtualBox，注意一下版本需要对应即可本人所用vagrant为2.3版本VirtualBox为6.1版本。这里都可以在对应官方文档下载，如果懒得找，本人也提供网盘资源<br><div class="tag link"><a class="link-card" title="密码自动填充如链接失效请留言" href="https://pan.baidu.com/s/17qUbm6ADJeBttsbypz4afA?pwd=hym9"><div class="left"><img src="/img/ico/1123281j060fj12g9gj3gv.jpg.icon.ico"/></div><div class="right"><p class="text">密码自动填充如链接失效请留言</p><p class="url">https://pan.baidu.com/s/17qUbm6ADJeBttsbypz4afA?pwd=hym9</p></div></a></div></p><h3 id="执行centos7-boxs"><a href="#执行centos7-boxs" class="headerlink" title="执行centos7 boxs"></a>执行centos7 boxs</h3><p>进入<span class='p cyan'>Vagrant</span>之后，可以搜寻相关box这里输入centos7<br><img src="https://s1.ax1x.com/2022/08/14/vUDDtf.png" alt=""><br>可以查询一些相关的Linux的系统，这里我们选择centos7，点击进去之后，会发现有安装指引，创建一个文件夹需要执行下面命令<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">vagrant init centos/7</span><br><span class="line">vagrant up</span><br></pre></td></tr></table></figure><br><emp>也可以直接从上面网盘中下载，这样可以直接用下方命令不用迅雷再去下载</emp><br>但是会发现下载速度过慢，这里告诉大家一个小技巧把下图中的连接用迅雷去新建下载任务去下载会发现速度快很多<br><img src="https://s1.ax1x.com/2022/08/14/vUDBAP.png" alt=""><br>下载完毕之后，把下载完毕的镜像加入vagrant中<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vagrant box add centos/7 C:\centos7\virtualbox.box</span><br></pre></td></tr></table></figure><br><img src="https://s1.ax1x.com/2022/08/14/vUDNXd.png" alt=""><br>加入完毕之后在执行<span class='p red'>vagrant up</span>命令会发现成功<br><img src="https://s1.ax1x.com/2022/08/14/vUDt6H.png" alt=""></p><h3 id="Oracle-VM-VirtualBox"><a href="#Oracle-VM-VirtualBox" class="headerlink" title="Oracle VM VirtualBox"></a>Oracle VM VirtualBox</h3><p>打开Oracle VM VirtualBox会发现刚才构建的centos7已经执行完毕，默认root账户密码 vagrant,这里我们默认更改root密码进入linux界面输入<strong>passwd</strong>命令。 这里修改密码为 centos7123<br><img src="https://s1.ax1x.com/2022/08/14/vUDw7t.png" alt=""></p><h4 id="1-vagrant-常见命令"><a href="#1-vagrant-常见命令" class="headerlink" title="1.vagrant 常见命令"></a>1.vagrant 常见命令</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vagrant up // 启动虚拟机</span><br><span class="line">vagrant ssh // 进入linux系统以vagrant用户如果需要切换root用户  sudo -i</span><br><span class="line">exit; //从linux系统推出出来到window cmd界面</span><br><span class="line">vagrant halt //关闭虚拟机</span><br><span class="line">vagrant ssh-config  //查看连接信息需要在vagrant up(开机)的情况下使用</span><br></pre></td></tr></table></figure><h4 id="2-修改ip地址"><a href="#2-修改ip地址" class="headerlink" title="2.修改ip地址"></a>2.修改ip地址</h4><p>更改虚拟机ip vagrantVm文件夹下 VagrantFile文件 config.vm.network 属性<img src="https://s1.ax1x.com/2022/08/14/vUDrh8.png" alt=""><img src="https://s1.ax1x.com/2022/08/14/vUDy9S.png" alt=""></p><h4 id="3-使用linux连接工具"><a href="#3-使用linux连接工具" class="headerlink" title="3.使用linux连接工具"></a>3.使用linux连接工具</h4><p>因为我们创建的centos7，是最小组件的没有一些别的命令，所以这里需要下载两个常见的命令组件检查端口的<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">-bash: netstat: command not found</span><br><span class="line">// 下载 yum install net-tools -y </span><br><span class="line">-bash: lsof: command not found</span><br><span class="line">// 下载 yum install lsof -y</span><br></pre></td></tr></table></figure><br>修改 /etc/ssh/sshd_config两项配置以便xshell连接<br>修改 ssd_config 里 PermitRootLogin属性 改为yes<br><img src="https://s1.ax1x.com/2022/08/14/vUD61g.png" alt="">PasswordAuthentication 改为yes 并且去掉 # <img src="https://s1.ax1x.com/2022/08/14/vUDccQ.png" alt=""><br>重启sshd服务即可连接<strong>systemctl restart sshd</strong>此时就可以用xshell连接了以root用户</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> linux </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> centos7 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Hello World</title>
+      <link href="/post/4a17b156.html"/>
+      <url>/post/4a17b156.html</url>
+      
+        <content type="html"><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p><h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p><h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p><h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Hexo </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+  
+  
+</search>
